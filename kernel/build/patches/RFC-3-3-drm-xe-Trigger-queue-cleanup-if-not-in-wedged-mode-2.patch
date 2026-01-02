@@ -1,0 +1,50 @@
+diff --git a/drivers/gpu/drm/xe/xe_guc_submit.c b/drivers/gpu/drm/xe/xe_guc_submit.c
+index 857375be9a84..1eef93d474f0 100644
+--- a/drivers/gpu/drm/xe/xe_guc_submit.c
++++ b/drivers/gpu/drm/xe/xe_guc_submit.c
+@@ -1277,6 +1277,7 @@ static void disable_scheduling_deregister(struct xe_guc *guc,
+  */
+ void xe_guc_submit_wedge(struct xe_guc *guc)
+ {
++	struct xe_device *xe = guc_to_xe(guc);
+ 	struct xe_gt *gt = guc_to_gt(guc);
+ 	struct xe_exec_queue *q;
+ 	unsigned long index;
+@@ -1291,19 +1292,25 @@ void xe_guc_submit_wedge(struct xe_guc *guc)
+ 	if (!guc->submission_state.initialized)
+ 		return;
+ 
+-	err = devm_add_action_or_reset(guc_to_xe(guc)->drm.dev,
+-				       guc_submit_wedged_fini, guc);
+-	if (err) {
+-		xe_gt_err(gt, "Failed to register clean-up on wedged.mode=2; "
+-			  "Although device is wedged.\n");
+-		return;
+-	}
++	if (xe->wedged.mode == 2) {
++		err = devm_add_action_or_reset(guc_to_xe(guc)->drm.dev,
++					       guc_submit_wedged_fini, guc);
++		if (err) {
++			xe_gt_err(gt, "Failed to register clean-up on wedged.mode=2; "
++				  "Although device is wedged.\n");
++			return;
++		}
+ 
+-	mutex_lock(&guc->submission_state.lock);
+-	xa_for_each(&guc->submission_state.exec_queue_lookup, index, q)
+-		if (xe_exec_queue_get_unless_zero(q))
+-			set_exec_queue_wedged(q);
+-	mutex_unlock(&guc->submission_state.lock);
++		mutex_lock(&guc->submission_state.lock);
++		xa_for_each(&guc->submission_state.exec_queue_lookup, index, q)
++			if (xe_exec_queue_get_unless_zero(q))
++				set_exec_queue_wedged(q);
++		mutex_unlock(&guc->submission_state.lock);
++	} else {
++		/* Forcefully kill any remaining exec queues, signal fences */
++		xe_guc_submit_stop(guc);
++		xe_guc_submit_pause_abort(guc);
++	}
+ }
+ 
+ static bool guc_submit_hint_wedged(struct xe_guc *guc)

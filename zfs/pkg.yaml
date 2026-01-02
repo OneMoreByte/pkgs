@@ -10,11 +10,19 @@ steps:
         destination: zfs.tar.gz
         sha256: "{{ .zfs_sha256 }}"
         sha512: "{{ .zfs_sha512 }}"
+        # 6.19-rc1 compat patch: https://github.com/openzfs/zfs/pull/18053
+      - url: https://patch-diff.githubusercontent.com/raw/openzfs/zfs/pull/18053.patch
+        destination: 18053.patch
+        sha256: "1a7a5400dede5dd52a3536b3019b0486f041b48575318b013ec2e65785bd97a3"
+        sha512: "516ca3149141264d501026e3571581c19d1767fad252617ed66493149c9be2d5b5e0e8b478e6d889f3af6a2d49ae1486134a11a609faac8e3f7e432ed4a4962a"
     env:
       ARCH: {{ if eq .ARCH "aarch64"}}arm64{{ else if eq .ARCH "x86_64" }}x86_64{{ else }}unsupported{{ end }}
     prepare:
       - |
         tar -xzf zfs.tar.gz --strip-components=1
+        
+         patch -p1 < 18053.patch || (echo "Failed to apply 6.19-rc1 compat patch" && exit 1)
+         sed -i 's/Linux-Maximum: 6.18/Linux-Maximum: 6.19/g' META
 
         ./autogen.sh
         ./configure --with-config=kernel --with-linux=/src

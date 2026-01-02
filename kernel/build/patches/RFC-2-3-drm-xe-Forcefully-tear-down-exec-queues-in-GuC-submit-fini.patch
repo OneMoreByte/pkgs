@@ -1,0 +1,17 @@
+diff --git a/drivers/gpu/drm/xe/xe_guc_submit.c b/drivers/gpu/drm/xe/xe_guc_submit.c
+index 21c6f8364647..857375be9a84 100644
+--- a/drivers/gpu/drm/xe/xe_guc_submit.c
++++ b/drivers/gpu/drm/xe/xe_guc_submit.c
+@@ -280,6 +280,12 @@ static void guc_submit_fini(struct drm_device *drm, void *arg)
+ 	struct xe_gt *gt = guc_to_gt(guc);
+ 	int ret;
+ 
++	/* Forcefully kill any remaining exec queues */
++	xe_guc_ct_stop(&guc->ct);
++	xe_guc_submit_reset_prepare(guc);
++	xe_guc_submit_stop(guc);
++	xe_guc_submit_pause_abort(guc);
++
+ 	ret = wait_event_timeout(guc->submission_state.fini_wq,
+ 				 xa_empty(&guc->submission_state.exec_queue_lookup),
+ 				 HZ * 5);

@@ -5,10 +5,16 @@ dependencies:
   - stage: base
 steps:
   - sources:
-      - url: https://cdn.kernel.org/pub/linux/kernel/v{{ regexReplaceAll "(\\d+)(.\\d+)(\\.\\d+)?$" .linux_version "${1}" }}.x/linux-{{ .linux_version }}.tar.xz
-        destination: linux.tar.xz
-        sha256: "{{ .linux_sha256 }}"
-        sha512: "{{ .linux_sha512 }}"
+      #- url: https://cdn.kernel.org/pub/linux/kernel/v{{ regexReplaceAll "(\\d+)(.\\d+)(\\.\\d+)?$" .linux_version "${1}" }}.x/linux-{{ .linux_version }}.tar.xz
+      #  destination: linux.tar.xz
+      #  sha256: "{{ .linux_sha256 }}"
+      #  sha512: "{{ .linux_sha512 }}"
+        
+      # The current head as of when I pulled these changes
+      - url: https://gitlab.freedesktop.org/drm/tip/-/archive/drm-tip/tip-drm-tip.tar.gz?ref_type=cbb25c38097a953da8605c68dd979be9a776ec83
+        destination: linux.tar.gz
+        sha256: "aff847841819695876bcd33fb697ceea522b4949c2a7f22e212cf31ac042939a"
+        sha512: "10ed2846f2ebcad5d712c5107f950c42db1b4c29a218af1f6daf9aed9034a24c16c9cc884d0a5e0b2436365ed5ab63b1a23bb9f41ff0e94c77d4dad29ce83fdc"
       - url: https://github.com/a13xp0p0v/kernel-hardening-checker/archive/{{ .kspp_ref }}.tar.gz
         destination: kspp.tar.gz
         sha256: "{{ .kspp_sha256 }}"
@@ -18,7 +24,7 @@ steps:
     prepare:
       - |
         mkdir -p /src
-        tar -xJf linux.tar.xz --strip-components=1 -C /src
+        tar -xzf linux.tar.gz --strip-components=1 -C /src
 
         cd /src
         make mrproper
